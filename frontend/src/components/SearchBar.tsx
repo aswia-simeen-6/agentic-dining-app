@@ -1,6 +1,6 @@
 import { useState, useRef, KeyboardEvent } from 'react'
-import { motion } from 'framer-motion'
-import { Search, X, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Search, X, Loader2, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 
 interface SearchBarProps {
@@ -22,6 +22,8 @@ export function SearchBar({ onSubmit, onCancel, isStreaming }: SearchBarProps) {
   const [placeholderIdx] = useState(() =>
     Math.floor(Math.random() * PLACEHOLDER_EXAMPLES.length),
   )
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleSubmit() {
@@ -33,6 +35,52 @@ export function SearchBar({ onSubmit, onCancel, isStreaming }: SearchBarProps) {
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') handleSubmit()
     if (e.key === 'Escape' && isStreaming) onCancel()
+  }
+
+  async function handleLocate() {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser.')
+      return
+    }
+    setIsLocating(true)
+    setLocationError(null)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            { headers: { 'Accept-Language': 'en' } },
+          )
+          if (!res.ok) throw new Error('Geocoding failed')
+          const data = (await res.json()) as {
+            display_name?: string
+            address?: { city?: string; town?: string; country?: string }
+          }
+          const address = data.address
+          const location =
+            address
+              ? [address.city ?? address.town, address.country].filter(Boolean).join(', ')
+              : data.display_name ?? `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`
+
+          setValue((prev) => {
+            const trimmed = prev.trim()
+            if (!trimmed) return location
+            if (trimmed.toLowerCase().includes(' in ')) return trimmed
+            return `${trimmed} in ${location}`
+          })
+          inputRef.current?.focus()
+        } catch {
+          setLocationError('Could not determine your location. Please try again.')
+        } finally {
+          setIsLocating(false)
+        }
+      },
+      () => {
+        setLocationError('Location access denied. Please allow location in your browser.')
+        setIsLocating(false)
+      },
+    )
   }
 
   return (
@@ -76,6 +124,30 @@ export function SearchBar({ onSubmit, onCancel, isStreaming }: SearchBarProps) {
           )}
           aria-label="Dining query"
         />
+
+        {/* Location detect button */}
+        {!isStreaming && (
+          <motion.button
+            type="button"
+            onClick={handleLocate}
+            disabled={isLocating}
+            whileTap={{ scale: 0.9 }}
+            title="Auto-detect location"
+            className={clsx(
+              'shrink-0 rounded-lg p-1.5 transition-colors duration-150',
+              isLocating
+                ? 'text-brand-500 cursor-wait'
+                : 'text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-gray-700',
+            )}
+            aria-label="Detect my location"
+          >
+            {isLocating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <MapPin className="w-4 h-4" />
+            )}
+          </motion.button>
+        )}
 
         {value && !isStreaming && (
           <motion.button
@@ -135,6 +207,21 @@ export function SearchBar({ onSubmit, onCancel, isStreaming }: SearchBarProps) {
           Finding the best dining options for you…
         </motion.p>
       )}
+
+      <AnimatePresence>
+        {locationError && (
+          <motion.p
+            key="location-error"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            className="text-center text-xs text-red-500 dark:text-red-400 mt-2"
+          >
+            {locationError}
+          </motion.p>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

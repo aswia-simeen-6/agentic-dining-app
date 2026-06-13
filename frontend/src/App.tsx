@@ -8,6 +8,10 @@ import { RecommendPanel } from './components/RecommendPanel'
 import { ReservationPanel } from './components/ReservationPanel'
 import { ErrorBanner } from './components/ErrorBanner'
 import { SkeletonCard } from './components/SkeletonCard'
+import { MapView } from './components/MapView'
+import { ComparisonTable } from './components/ComparisonTable'
+import { ShareButton } from './components/ShareButton'
+import { EmptyState } from './components/EmptyState'
 import { usePipeline } from './hooks/usePipeline'
 
 function useDarkMode() {
@@ -42,6 +46,8 @@ export default function App() {
     reservation,
     errors,
     isStreaming,
+    sessionId,
+    shareUrl,
     submitQuery,
     cancel,
     dismissError,
@@ -224,6 +230,48 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        {/* Map view */}
+        <AnimatePresence>
+          {sortedRestaurants.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <MapView restaurants={sortedRestaurants} rankMap={rankMap} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Comparison table */}
+        <AnimatePresence>
+          {sortedRestaurants.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ComparisonTable restaurants={sortedRestaurants} rankMap={rankMap} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Empty state */}
+        <AnimatePresence>
+          {currentStep === 'complete' && sortedRestaurants.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EmptyState onSubmit={submitQuery} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Recommendation panel */}
         <AnimatePresence>
           {recommendation && (
@@ -255,6 +303,21 @@ export default function App() {
               className="mb-5"
             >
               <ReservationPanel reservation={reservation} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Share button */}
+        <AnimatePresence>
+          {currentStep === 'complete' && shareUrl && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.3 }}
+              className="flex justify-center mt-4 mb-5"
+            >
+              <ShareButton sessionId={sessionId} />
             </motion.div>
           )}
         </AnimatePresence>

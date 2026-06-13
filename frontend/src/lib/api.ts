@@ -3,6 +3,17 @@ import type { QueryResponse, StreamCallbacks } from '../types/api'
 const API_KEY = import.meta.env.VITE_API_KEY ?? 'dev-key'
 const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
 
+export async function fetchStoredResults(sessionId: string): Promise<QueryResponse> {
+  const res = await fetch(`${BASE_URL}/api/results/${sessionId}`, {
+    headers: { 'X-API-Key': API_KEY },
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`API error ${res.status}: ${text}`)
+  }
+  return res.json() as Promise<QueryResponse>
+}
+
 export async function queryBlocking(
   query: string,
   sessionId: string,

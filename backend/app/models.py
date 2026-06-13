@@ -77,6 +77,7 @@ class ReservationResult(BaseModel):
     place_id: str
     name: str
     deep_link: str
+    opentable_url: str | None = None
     draft_message: str
 
 

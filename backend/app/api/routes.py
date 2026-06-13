@@ -20,6 +20,32 @@ log = structlog.get_logger()
 
 router = APIRouter()
 
+# In-memory session result store: {session_id: (expiry_ts, QueryResponse)}
+_results: dict[str, tuple[float, QueryResponse]] = {}
+_RESULT_TTL = 60 * 60 * 24  # 24 hours
+
+
+def _store_result(session_id: str, response: QueryResponse) -> None:
+    import time
+    _results[session_id] = (time.time() + _RESULT_TTL, response)
+    # Prune expired entries
+    now = time.time()
+    expired = [k for k, (exp, _) in _results.items() if now > exp]
+    for k in expired:
+        del _results[k]
+
+
+def _get_result(session_id: str) -> QueryResponse | None:
+    import time
+    entry = _results.get(session_id)
+    if entry is None:
+        return None
+    expiry, response = entry
+    if time.time() > expiry:
+        del _results[session_id]
+        return None
+    return response
+
 
 def _state_to_response(state: PipelineState, session_id: str) -> QueryResponse:
     return QueryResponse(
@@ -64,6 +90,7 @@ async def query_blocking(request_data: QueryRequest, request: Request) -> QueryR
         raise HTTPException(status_code=500, detail="Pipeline execution failed") from exc
 
     response = _state_to_response(final_state, request_data.session_id)
+    _store_result(request_data.session_id, response)
     log.info(
         "query_done",
         session_id=request_data.session_id,
@@ -104,6 +131,7 @@ async def _stream_pipeline(initial: PipelineState, session_id: str) -> AsyncGene
 
         if final_state is not None:
             response = _state_to_response(final_state, session_id)
+            _store_result(session_id, response)
             yield f"data: {json.dumps({'type': 'complete', 'data': response.model_dump()})}\n\n"
         else:
             yield f"data: {json.dumps({'type': 'error', 'message': 'Pipeline produced no output'})}\n\n"
@@ -210,6 +238,17 @@ async def upload_menu(
             "chars": len(full_text),
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/results/{session_id} — retrieve stored results for share URL
+# ---------------------------------------------------------------------------
+@router.get("/results/{session_id}", response_model=QueryResponse, dependencies=[Depends(require_api_key)])
+async def get_results(session_id: str) -> QueryResponse:
+    result = _get_result(session_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Results not found or expired")
+    return result
 
 
 # ---------------------------------------------------------------------------

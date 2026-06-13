@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react'
-import { queryStream } from '../lib/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { fetchStoredResults, queryStream } from '../lib/api'
 import type {
   PipelineStep,
   QueryResponse,
@@ -17,6 +17,7 @@ interface PipelineState {
   reservation: Reservation | null
   errors: string[]
   isStreaming: boolean
+  shareUrl: string | null
 }
 
 const initialState: PipelineState = {
@@ -28,6 +29,7 @@ const initialState: PipelineState = {
   reservation: null,
   errors: [],
   isStreaming: false,
+  shareUrl: null,
 }
 
 function generateSessionId(): string {
@@ -39,6 +41,37 @@ export function usePipeline() {
 
   // Ref to the SSE cleanup function so cancel() can close it from anywhere
   const closeStreamRef = useRef<(() => void) | null>(null)
+
+  // On mount: check if URL matches /r/:sessionId and load stored results
+  useEffect(() => {
+    const match = /^\/r\/([^/?#]+)/.exec(window.location.pathname)
+    if (!match) return
+    const sessionId = match[1]
+
+    void fetchStoredResults(sessionId)
+      .then((data: QueryResponse) => {
+        setState((prev) => ({
+          ...prev,
+          sessionId,
+          currentStep: 'complete',
+          isStreaming: false,
+          restaurants: data.restaurants,
+          recommendation: data.recommendation,
+          reservation: data.reservation,
+          errors: data.errors,
+          shareUrl: `${window.location.origin}/r/${sessionId}`,
+        }))
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Failed to load shared results.'
+        setState((prev) => ({
+          ...prev,
+          currentStep: 'error',
+          errors: [...prev.errors, msg],
+        }))
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const submitQuery = useCallback((query: string) => {
     // Close any existing stream before starting a new one
@@ -94,6 +127,7 @@ export function usePipeline() {
           recommendation: data.recommendation,
           reservation: data.reservation,
           errors: data.errors,
+          shareUrl: `${window.location.origin}/r/${sessionId}`,
         }))
       },
 
@@ -148,6 +182,7 @@ export function usePipeline() {
     reservation: state.reservation,
     errors: state.errors,
     isStreaming: state.isStreaming,
+    shareUrl: state.shareUrl,
     // Actions
     submitQuery,
     cancel,

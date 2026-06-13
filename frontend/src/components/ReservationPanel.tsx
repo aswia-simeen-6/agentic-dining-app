@@ -57,18 +57,32 @@ export function ReservationPanel({ reservation }: ReservationPanelProps) {
             </p>
           </div>
 
-          <motion.a
-            href={reservation.deep_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 font-semibold text-sm shadow-sm hover:shadow-brand-600/30 hover:shadow-md transition-all duration-200"
-          >
-            <CalendarCheck className="w-4 h-4" />
-            Reserve / Book
-            <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-          </motion.a>
+          <div className="flex items-center gap-2 flex-wrap">
+            <motion.a
+              href={reservation.deep_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 font-semibold text-sm shadow-sm hover:shadow-brand-600/30 hover:shadow-md transition-all duration-200"
+            >
+              <CalendarCheck className="w-4 h-4" />
+              Reserve / Book
+              <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+            </motion.a>
+
+            <motion.a
+              href={`https://www.opentable.com/s/?term=${encodeURIComponent(reservation.name)}&covers=2`}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-brand-500 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 px-5 py-2.5 font-semibold text-sm transition-all duration-200"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Search OpenTable
+            </motion.a>
+          </div>
         </div>
 
         {/* Draft message */}

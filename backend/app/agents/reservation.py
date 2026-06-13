@@ -64,8 +64,14 @@ async def run(state: PipelineState) -> PipelineState:
         f"&query_place_id={restaurant.place_id}"
     )
 
-    # Gather context for draft message
+    # OpenTable search URL
     supervisor = state.get("supervisor_output")
+    party_size_ot = supervisor.party_size if supervisor else 2
+    opentable_url = (
+        f"https://www.opentable.com/s/?term={encoded_name}&covers={party_size_ot}"
+    )
+
+    # Gather context for draft message
     party_size = supervisor.party_size if supervisor else 2
     special_requests = supervisor.special_requests if supervisor else ""
     hours_info = f" Their hours are: {restaurant.hours}." if restaurant.hours else ""
@@ -111,6 +117,7 @@ async def run(state: PipelineState) -> PipelineState:
         place_id=restaurant.place_id,
         name=restaurant.name,
         deep_link=deep_link,
+        opentable_url=opentable_url,
         draft_message=draft_message,
     )
 

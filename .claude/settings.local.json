@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Mehul\\\\Downloads\\\\Aswia\\\\project\\\\agentic_dining\" -Recurse -File)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(ls -la \"C:\\\\Users\\\\Mehul\\\\Downloads\\\\Aswia\\\\project\" 2>&1)",
+      "PowerShell(python --version)",
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

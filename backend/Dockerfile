@@ -5,8 +5,6 @@ COPY pyproject.toml .
 # Copy app so hatchling can find the package
 COPY app/ ./app/
 RUN pip install --upgrade pip && pip install --no-cache-dir ".[dev]"
-# Pre-download ChromaDB embedding model at build time (no cold-start)
-RUN python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()([])"
 
 # Stage 2: runtime
 FROM python:3.12-slim AS runtime

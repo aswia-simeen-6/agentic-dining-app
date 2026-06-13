@@ -96,9 +96,8 @@ export function RestaurantCard({ restaurant, index, rank, isSelected = false, on
         'shadow-sm hover:shadow-lg dark:hover:shadow-gray-900/50',
         'transition-shadow duration-300',
         onClick && 'cursor-pointer',
-        isSelected
-          ? 'ring-2 ring-brand-500 shadow-lg'
-          : rank === 1 && 'ring-2 ring-brand-500',
+        isSelected && 'ring-2 ring-brand-500 shadow-lg',
+        !isSelected && rank === 1 && 'ring-2 ring-amber-400',
       )}
     >
       {/* Rank badge */}

@@ -39,6 +39,7 @@ const SKELETON_COUNT = 3
 
 export default function App() {
   const [dark, setDark] = useDarkMode()
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null)
   const {
     currentStep,
     restaurants,
@@ -52,6 +53,11 @@ export default function App() {
     cancel,
     dismissError,
   } = usePipeline()
+
+  // Reset card selection on new search
+  useEffect(() => {
+    if (currentStep === 'supervisor') setSelectedPlaceId(null)
+  }, [currentStep])
 
   const isActive = currentStep !== 'idle'
   const isLoading = isStreaming && restaurants.length === 0
@@ -223,6 +229,8 @@ export default function App() {
                         restaurant={r}
                         index={i}
                         rank={rankMap.get(r.place_id)}
+                        isSelected={selectedPlaceId === r.place_id}
+                        onClick={() => setSelectedPlaceId(prev => prev === r.place_id ? null : r.place_id)}
                       />
                     ))}
               </div>

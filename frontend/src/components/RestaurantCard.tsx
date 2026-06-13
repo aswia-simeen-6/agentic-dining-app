@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Star, MapPin, Clock, Globe, Phone, UtensilsCrossed } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Star, MapPin, Clock, Globe, Phone, UtensilsCrossed, ExternalLink, Navigation } from 'lucide-react'
 import clsx from 'clsx'
 import type { Restaurant } from '../types/api'
 
@@ -8,6 +8,8 @@ interface RestaurantCardProps {
   restaurant: Restaurant
   index: number
   rank?: number
+  isSelected?: boolean
+  onClick?: () => void
 }
 
 function PriceLevel({ level }: { level: number | null }) {
@@ -57,7 +59,7 @@ function ReviewStars({ rating }: { rating: number }) {
   )
 }
 
-export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps) {
+export function RestaurantCard({ restaurant, index, rank, isSelected = false, onClick }: RestaurantCardProps) {
   const [imgError, setImgError] = useState(false)
 
   const visibleReviews = restaurant.reviews.slice(0, 2)
@@ -69,6 +71,10 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
   ]
   const gradientClass = gradients[index % gradients.length]
 
+  const encodedName = encodeURIComponent(restaurant.name)
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedName}&query_place_id=${restaurant.place_id}`
+  const openTableUrl = `https://www.opentable.com/s/?term=${encodedName}&covers=2`
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
@@ -79,13 +85,20 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
         ease: 'easeOut',
       }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick() } : undefined}
       className={clsx(
         'relative flex flex-col rounded-2xl overflow-hidden',
         'bg-white dark:bg-gray-800',
         'border border-gray-200 dark:border-gray-700',
         'shadow-sm hover:shadow-lg dark:hover:shadow-gray-900/50',
         'transition-shadow duration-300',
-        rank === 1 && 'ring-2 ring-brand-500',
+        onClick && 'cursor-pointer',
+        isSelected
+          ? 'ring-2 ring-brand-500 shadow-lg'
+          : rank === 1 && 'ring-2 ring-brand-500',
       )}
     >
       {/* Rank badge */}
@@ -177,6 +190,7 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
               <Phone className="w-3.5 h-3.5 shrink-0 text-gray-400" />
               <a
                 href={`tel:${restaurant.phone}`}
+                onClick={(e) => e.stopPropagation()}
                 className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
               >
                 {restaurant.phone}
@@ -190,6 +204,7 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
                 href={restaurant.website}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
                 className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate"
               >
                 {restaurant.website.replace(/^https?:\/\//, '')}
@@ -218,6 +233,7 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
                     href={review.author_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className="text-xs font-semibold text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate"
                   >
                     {review.author_name}
@@ -235,6 +251,42 @@ export function RestaurantCard({ restaurant, index, rank }: RestaurantCardProps)
           </div>
         )}
       </div>
+
+      {/* Action bar — expands when card is selected */}
+      <AnimatePresence>
+        {isSelected && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-gray-100 dark:border-gray-700/60"
+          >
+            <div className="flex gap-2 p-3">
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white transition-colors"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                Google Maps
+              </a>
+              <a
+                href={openTableUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 px-3 text-xs font-semibold border border-brand-500 text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                OpenTable
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.article>
   )
 }
